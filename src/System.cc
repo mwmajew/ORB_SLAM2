@@ -42,6 +42,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     cout << "Input sensor was set to: ";
 
+    MstrVocFile = strVocFile;
+    MstrSettingsFile = strSettingsFile;
+    MbUseViewer = bUseViewer;
+
     if(mSensor==MONOCULAR)
         cout << "Monocular" << endl;
     else if(mSensor==STEREO)
@@ -111,6 +115,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+}
+
+System::System(const System &obj){
+    System(obj.MstrVocFile,  obj.MstrSettingsFile, obj.mSensor, obj.MbUseViewer);
 }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
@@ -414,6 +422,34 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
     f.close();
     cout << endl << "trajectory saved!" << endl;
+}
+
+string System::GetKeyFrameTrajectoryTUM()
+{
+    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    stringstream ss;
+    ss<<fixed;
+
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpKFs[i];
+
+       // pKF->SetPose(pKF->GetPose()*Two);
+
+        if(pKF->isBad())
+            continue;
+
+        cv::Mat R = pKF->GetRotation().t();
+        vector<float> q = Converter::toQuaternion(R);
+        cv::Mat t = pKF->GetCameraCenter();
+        ss << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
+          << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+
+    }
+
+    return ss.str();
 }
 
 void System::SaveTrajectoryKITTI(const string &filename)

@@ -7,8 +7,8 @@ ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 ")
 
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
@@ -27,17 +27,19 @@ else()
 endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
-
-find_package(OpenCV 3.0 QUIET)
-if(NOT OpenCV_FOUND)
-   find_package(OpenCV 2.4.3 QUIET)
-   if(NOT OpenCV_FOUND)
-      message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
-   endif()
-endif()
+find_package(OpenCV 3.2.0 REQUIRED)
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+
+find_package( PythonLibs 2.7 REQUIRED )
+include_directories( ${PYTHON_INCLUDE_DIRS} )
+ 
+find_package( Boost COMPONENTS python REQUIRED )
+include_directories( ${Boost_INCLUDE_DIR} )
+message( ${Boost_INCLUDE_DIR} )
+
+
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -70,6 +72,10 @@ src/Initializer.cc
 src/Viewer.cc
 )
 
+add_library( orb_slam2py SHARED 
+   src/pyboost_cv3_converter.cc 
+   src/python_wrapper.cc 
+   )
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
@@ -77,6 +83,8 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 )
+target_link_libraries(orb_slam2py ${Boost_LIBRARIES} ${PROJECT_NAME} )
+set_target_properties( orb_slam2py PROPERTIES PREFIX "" )
 
 # Build examples
 
